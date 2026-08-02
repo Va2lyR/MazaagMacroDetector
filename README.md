@@ -1,40 +1,53 @@
 # Mazaag Macro Detector
 
-**Minecraft Screenshare Macro Detection Tool**
+**Professional Minecraft Screenshare Macro Detection Tool**
 
-dev by ValyaR  
-Discord: `_iaec`  `.mazaag`
+[![Platform](https://img.shields.io/badge/Platform-Windows-blue.svg)]()
+[![Language](https://img.shields.io/badge/Language-PowerShell-blue.svg)]()
+[![License](https://img.shields.io/badge/License-For%20Screenshare%20Use-red.svg)]()
 
----
-
-## What is this?
-
-A lightweight tool made for Minecraft screenshares.  
-It scans the PC for macros, auto-clickers, and automation tools commonly used for cheating.
-
-It looks for:
-- Running macro processes
-- AutoHotkey / AutoIt scripts
-- TinyTask, OP Auto Clicker, GS Auto Clicker, and many more
-- Startup entries & Scheduled Tasks
-- Prefetch + BAM execution traces
-- Deleted files in Recycle Bin
-- Peripheral software (Razer, Logitech, etc.)
-- Minecraft log keywords
-
-Results are shown with clear severity:
-
-- **HIGH** → Strong evidence  
-- **MEDIUM** → Clear traces  
-- **LOW** → Weak / possible context
+**Developer:** ValyaR  
+**Discord:** `_iaec` · `.mazaag`
 
 ---
 
-## How to run (easiest way)
+## Overview
 
-### Online (one command)
+Mazaag Macro Detector is a lightweight forensic tool designed specifically for **Minecraft screenshares**.  
+It scans the system for traces of macros, auto-clickers, and input automation tools commonly used to gain unfair advantages.
 
-Open **CMD** or **PowerShell** and paste this:
+The tool combines multiple detection methods used in modern Windows forensics to provide clear and reliable results.
+
+---
+
+## Features
+
+- Running process detection (AutoHotkey, AutoIt, TinyTask, OP Auto Clicker, GS Auto Clicker, and more)
+- Script file & content analysis (`.ahk`, `.au3`)
+- Startup folders & Scheduled Tasks inspection
+- Prefetch & BAM execution traces
+- Windows Event Log analysis (when run as Administrator)
+- Recycle Bin deleted file recovery
+- Peripheral software detection (Razer, Logitech, Corsair, etc.)
+- USB device history
+- Minecraft log keyword scanning
+- Clean severity-based reporting system
+
+### Severity Levels
+
+| Level     | Meaning                          |
+|-----------|----------------------------------|
+| **HIGH**  | Strong / direct evidence         |
+| **MEDIUM**| Clear traces found               |
+| **LOW**   | Weak or contextual indicators    |
+
+---
+
+## Quick Start (Recommended)
+
+### Online Execution (One Command)
+
+Open **Command Prompt** or **PowerShell** and paste the following:
 
 ```cmd
 powershell -ExecutionPolicy Bypass -NoProfile -Command "iwr 'https://raw.githubusercontent.com/Va2lyR/MazaagMacroDetector/refs/heads/main/MazaagtoolM.ps1' -UseBasicParsing | iex"
