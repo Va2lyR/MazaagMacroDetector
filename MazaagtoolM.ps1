@@ -7,6 +7,9 @@ param(
   [int]$MaxSeconds = 140
 )
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+try { chcp 65001 | Out-Null } catch {}
+
 $ErrorActionPreference = 'SilentlyContinue'
 $script:Findings = New-Object System.Collections.Generic.List[object]
 $script:Now = Get-Date
@@ -20,44 +23,34 @@ function Test-TimeBudget { return (((Get-Date) - $script:ScanStartedAt).TotalSec
 
 function Write-Header {
   Clear-Host
-  Write-Host "╔════════════════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Red
-  Write-Host "║" -ForegroundColor Red -NoNewline
-  Write-Host "                 MAZAAG MACRO  v2                 " -ForegroundColor White -NoNewline
-  Write-Host "║" -ForegroundColor Red
-  Write-Host "╚════════════════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Red
+  Write-Host "======================================================================================" -ForegroundColor Red
+  Write-Host "                              MAZAAG MACRO  v2" -ForegroundColor White
+  Write-Host "======================================================================================" -ForegroundColor Red
   Write-Host
-  Write-Host "  ███╗   ███╗ █████╗ ███████╗ █████╗  █████╗  ██████╗ " -ForegroundColor Red
-  Write-Host "  ████╗ ████║██╔══██╗╚══███╔╝██╔══██╗██╔══██╗██╔════╝ " -ForegroundColor Red
-  Write-Host "  ██╔████╔██║███████║  ███╔╝ ███████║███████║██║  ███╗" -ForegroundColor Red
-  Write-Host "  ██║╚██╔╝██║██╔══██║ ███╔╝  ██╔══██║██╔══██║██║   ██║" -ForegroundColor Red
-  Write-Host "  ██║ ╚═╝ ██║██║  ██║███████╗██║  ██║██║  ██║╚██████╔╝" -ForegroundColor Red
-  Write-Host "  ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ " -ForegroundColor Red
+  Write-Host "  M A Z A A G   M A C R O" -ForegroundColor Red
+  Write-Host "  High-Accuracy Macro Detector" -ForegroundColor Red
+  Write-Host "  dev by ValyaR  |  discord: _iaec  .mazaag" -ForegroundColor DarkRed
   Write-Host
-  Write-Host "              HIGH-ACCURACY MACRO DETECTOR" -ForegroundColor Red
-  Write-Host "         dev by ValyaR  |  discord: _iaec  .mazaag" -ForegroundColor DarkRed
-  Write-Host ("═" * 84) -ForegroundColor Red
-  Write-Host ("   Scan time : {0}" -f $script:Now.ToString('yyyy-MM-dd HH:mm:ss')) -ForegroundColor White
-  Write-Host ("   Mode      : {0} | Admin: {1} | Budget: {2}s" -f $(if($Deep){'DEEP'}elseif($Quick){'QUICK'}else{'NORMAL'}), $script:IsAdmin, $script:MaxScanSeconds) -ForegroundColor White
-  Write-Host ("═" * 84) -ForegroundColor Red
+  Write-Host "======================================================================================" -ForegroundColor Red
+  Write-Host ("  Scan time : {0}" -f $script:Now.ToString('yyyy-MM-dd HH:mm:ss')) -ForegroundColor White
+  Write-Host ("  Mode      : {0} | Admin: {1} | Budget: {2}s" -f $(if($Deep){'DEEP'}elseif($Quick){'QUICK'}else{'NORMAL'}), $script:IsAdmin, $script:MaxScanSeconds) -ForegroundColor White
+  Write-Host "======================================================================================" -ForegroundColor Red
   Write-Host
 }
 
 function Write-BigResultsTitle {
   Write-Host
-  Write-Host "  ██████╗ ███████╗███████╗██╗   ██╗██╗  ████████╗███████╗" -ForegroundColor Red
-  Write-Host "  ██╔══██╗██╔════╝██╔════╝██║   ██║██║  ╚══██╔══╝██╔════╝" -ForegroundColor Red
-  Write-Host "  ██████╔╝█████╗  ███████╗██║   ██║██║     ██║   ███████╗" -ForegroundColor Red
-  Write-Host "  ██╔══██╗██╔══╝  ╚════██║██║   ██║██║     ██║   ╚════██║" -ForegroundColor Red
-  Write-Host "  ██║  ██║███████╗███████║╚██████╔╝███████╗██║   ███████║" -ForegroundColor Red
-  Write-Host "  ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚══════╝╚═╝   ╚══════╝" -ForegroundColor Red
+  Write-Host "======================================================================================" -ForegroundColor Red
+  Write-Host "                                    RESULTS" -ForegroundColor White
+  Write-Host "======================================================================================" -ForegroundColor Red
   Write-Host
 }
 
 function Write-ProgressBar {
   param([int]$Percent, [string]$Status)
-  $width = 42
+  $width = 40
   $filled = [math]::Floor(($Percent / 100) * $width)
-  $bar = ('█' * $filled) + ('░' * ($width - $filled))
+  $bar = ('#' * $filled) + ('-' * ($width - $filled))
   Write-Host ("`r[ {0} ] {1,3}%  {2}" -f $bar, $Percent, $Status) -ForegroundColor Red -NoNewline
   if ($Percent -ge 100) { Write-Host }
 }
@@ -457,13 +450,27 @@ function Write-FindingTable {
   $i=1; $last=''
   foreach ($f in $ordered) {
     if (-not $last) {
-      if ($f.Severity -eq 'HIGH') { Write-Host ('█'*80) -ForegroundColor Red; Write-Host '                                   HIGH' -ForegroundColor Red; Write-Host ('█'*80) -ForegroundColor Red }
-      elseif ($f.Severity -eq 'MEDIUM') { Write-Host ('█'*80) -ForegroundColor Yellow; Write-Host '                                  MEDIUM' -ForegroundColor Yellow; Write-Host ('█'*80) -ForegroundColor Yellow }
-      else { Write-Host ('-'*80) -ForegroundColor DarkGray; Write-Host '                                    LOW' -ForegroundColor Gray; Write-Host ('-'*80) -ForegroundColor DarkGray }
+      if ($f.Severity -eq 'HIGH') {
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Red
+        Write-Host "                                   HIGH" -ForegroundColor Red
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Red
+      } elseif ($f.Severity -eq 'MEDIUM') {
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Yellow
+        Write-Host "                                  MEDIUM" -ForegroundColor Yellow
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Yellow
+      } else {
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkGray
+        Write-Host "                                    LOW" -ForegroundColor Gray
+        Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkGray
+      }
     } elseif ($last -eq 'HIGH' -and $f.Severity -eq 'MEDIUM') {
-      Write-Host ('█'*80) -ForegroundColor Yellow; Write-Host '                                  MEDIUM' -ForegroundColor Yellow; Write-Host ('█'*80) -ForegroundColor Yellow
+      Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Yellow
+      Write-Host "                                  MEDIUM" -ForegroundColor Yellow
+      Write-Host "--------------------------------------------------------------------------------" -ForegroundColor Yellow
     } elseif ($last -eq 'MEDIUM' -and $f.Severity -eq 'LOW') {
-      Write-Host ('-'*80) -ForegroundColor DarkGray; Write-Host '                                    LOW' -ForegroundColor Gray; Write-Host ('-'*80) -ForegroundColor DarkGray
+      Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkGray
+      Write-Host "                                    LOW" -ForegroundColor Gray
+      Write-Host "--------------------------------------------------------------------------------" -ForegroundColor DarkGray
     }
     $last = $f.Severity
     $col = switch($f.Severity){'HIGH'{'Red'}'MEDIUM'{'Yellow'}default{'Gray'}}
@@ -475,7 +482,8 @@ function Write-FindingTable {
     Write-Host ("    Deleted  : {0}" -f (Format-Time $f.DeletedAt))
     if ($f.Path) { Write-Host ("    Path     : {0}" -f $f.Path) }
     if ($f.Details) { Write-Host ("    Details  : {0}" -f $f.Details) }
-    Write-Host; $i++
+    Write-Host
+    $i++
   }
 }
 
@@ -501,8 +509,10 @@ th{background:#1a1a1a}</style></head><body>
   }
   $h += "</table></body></html>"
   $h | Set-Content $html -Encoding UTF8
-  Write-Host; Write-Host "Exported:" -ForegroundColor Cyan
-  Write-Host "  JSON : $json"; Write-Host "  HTML : $html"
+  Write-Host
+  Write-Host "Exported:" -ForegroundColor Cyan
+  Write-Host "  JSON : $json"
+  Write-Host "  HTML : $html"
 }
 
 Write-Header
@@ -520,7 +530,8 @@ Search-DeletedMacros;           Write-ProgressBar 90 'Deleted traces'
 Search-Prefetch;                Write-ProgressBar 96 'Prefetch'
 Search-RecentJavaLogs;          Write-ProgressBar 100 'Complete'
 
-Write-Host; Write-BigResultsTitle
+Write-Host
+Write-BigResultsTitle
 Write-Host ('='*86) -ForegroundColor Red
 Write-CleanSummary
 Write-FindingTable
