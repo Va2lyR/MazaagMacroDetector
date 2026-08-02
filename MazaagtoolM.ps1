@@ -4,7 +4,7 @@ param(
   [switch]$Deep,
   [switch]$ExcludePeripheral,
   [switch]$Export,
-  [int]$MaxSeconds = 140
+  [int]$MaxSeconds = 160
 )
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
@@ -16,7 +16,7 @@ $script:Now = Get-Date
 $script:ToolRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:MaxFilesPerRoot = if ($Deep) { 4500 } elseif ($Quick) { 1000 } else { 2800 }
 $script:ScanStartedAt = Get-Date
-$script:MaxScanSeconds = if ($Deep) { [Math]::Max($MaxSeconds, 200) } elseif ($Quick) { [Math]::Min($MaxSeconds, 55) } else { $MaxSeconds }
+$script:MaxScanSeconds = if ($Deep) { [Math]::Max($MaxSeconds, 220) } elseif ($Quick) { [Math]::Min($MaxSeconds, 55) } else { $MaxSeconds }
 $script:IsAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
 function Test-TimeBudget { return (((Get-Date) - $script:ScanStartedAt).TotalSeconds -lt $script:MaxScanSeconds) }
@@ -66,7 +66,7 @@ function Test-MacroName {
     'op auto','opauto','gs auto','gsauto','murgee','alphaclicker','speed auto',
     'free auto clicker','pymacro','minimouse','inseffra','jitbit','macro recorder',
     'autoclicker','auto clicker','auto-click','doubleclick','rapidfire','rapid-fire',
-    'clicker','.mcr','.amc','.tinytask','.rec','interception'
+    'clicker','.mcr','.amc','.tinytask','.rec','interception','tgmacro','micromacro'
   )
   foreach ($x in $p) { if ($l.Contains($x)) { return $true } }
   return $false
@@ -76,7 +76,27 @@ function Test-PeripheralSoftwareName {
   param([string]$Name)
   if ([string]::IsNullOrWhiteSpace($Name)) { return $false }
   $l = $Name.ToLowerInvariant()
-  $p = @('steelseries','razer','synapse','logitech','lghub','g hub','corsair','icue','roccat','swarm','bloody','redragon','glorious','hyperx','ngenuity','armoury','asus','msi','cooler master','alienware','pulsar','lamzu','attackshark','x-mouse','xmouse')
+  $p = @(
+    'steelseries','steelseries gg','sonar','engine 3',
+    'razer','synapse','chroma',
+    'logitech','lghub','g hub','lghub_agent','lgs',
+    'corsair','icue','cue',
+    'roccat','swarm',
+    'bloody','a4tech',
+    'redragon','rdcfg',
+    'glorious','glorious core','model o',
+    'hyperx','ngenuity',
+    'asus','armoury','armoury crate',
+    'msi','dragon center',
+    'cooler master','masterplus',
+    'alienware',
+    'pulsar','lamzu','attackshark','attack shark',
+    'ajazz','darmoshark','vgn','vxe',
+    'atk','atk hub','atkhub','atk v hub',
+    'keychron','via',
+    'endgame gear','xtrfy','zowie','finalmouse',
+    'x-mouse','xmouse','mouse manager','gaming mouse'
+  )
   foreach ($x in $p) { if ($l.Contains($x)) { return $true } }
   return $false
 }
@@ -165,16 +185,26 @@ function Test-SkipScanPath {
 function Get-PeripheralVendor {
   param([string]$Name)
   $l = $Name.ToLowerInvariant()
+  if ($l -match 'atk') { return 'ATK' }
+  if ($l -match 'vxe|vgn') { return 'VXE/VGN' }
   if ($l -match 'steelseries') { return 'SteelSeries' }
   if ($l -match 'razer|synapse') { return 'Razer' }
-  if ($l -match 'logitech|lghub|g hub') { return 'Logitech' }
+  if ($l -match 'logitech|lghub|g hub|lgs') { return 'Logitech' }
   if ($l -match 'corsair|icue') { return 'Corsair' }
   if ($l -match 'roccat|swarm') { return 'ROCCAT' }
-  if ($l -match 'bloody') { return 'Bloody' }
-  if ($l -match 'redragon') { return 'Redragon' }
+  if ($l -match 'bloody|a4tech') { return 'Bloody' }
+  if ($l -match 'redragon|rdcfg') { return 'Redragon' }
   if ($l -match 'glorious') { return 'Glorious' }
-  if ($l -match 'hyperx') { return 'HyperX' }
+  if ($l -match 'hyperx|ngenuity') { return 'HyperX' }
   if ($l -match 'asus|armoury') { return 'ASUS' }
+  if ($l -match 'msi|dragon center') { return 'MSI' }
+  if ($l -match 'cooler master|masterplus') { return 'Cooler Master' }
+  if ($l -match 'alienware') { return 'Alienware' }
+  if ($l -match 'pulsar') { return 'Pulsar' }
+  if ($l -match 'lamzu') { return 'LAMZU' }
+  if ($l -match 'attackshark|attack shark') { return 'Attack Shark' }
+  if ($l -match 'ajazz') { return 'Ajazz' }
+  if ($l -match 'darmoshark') { return 'Darmoshark' }
   if ($l -match 'x-mouse|xmouse') { return 'X-Mouse Button Control' }
   return 'Peripheral software'
 }
@@ -185,7 +215,7 @@ function Search-KnownMacroProcesses {
     'AutoIt3','AutoIt','Pulover','PuloversMacroCreator','MacroRecorder','JitbitMacroRecorder',
     'TinyTask','MiniMouseMacro','MouseRecorder','Keyran','XMouseButtonControl','Interception',
     'OPAutoClicker','OP Auto Clicker','GSAutoClicker','GS Auto Clicker','Murgee','AlphaClicker',
-    'SpeedAutoClicker','FreeAutoClicker','PyMacroRecord','Inseffra'
+    'SpeedAutoClicker','FreeAutoClicker','PyMacroRecord','Inseffra','TGMacro','MicroMacro'
   )
   Get-CimInstance Win32_Process | ForEach-Object {
     $n = $_.Name; $c = $_.CommandLine; $match = $false
@@ -203,8 +233,9 @@ function Search-StartupTasksServices {
     $startup = Join-Path $user 'AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup'
     if (Test-Path $startup) {
       Get-ChildItem $startup -Force -File -EA SilentlyContinue | ForEach-Object {
-        if (Test-MacroName $_.Name) {
-          Add-Finding -Severity 'HIGH' -Category 'Startup entry' -Evidence $_.Name -Path $_.FullName -CreatedAt $_.CreationTime -ModifiedAt $_.LastWriteTime -Details 'User Startup folder'
+        if ((Test-MacroName $_.Name) -or (Test-PeripheralSoftwareName $_.Name)) {
+          $sev = if (Test-MacroName $_.Name) { 'HIGH' } else { 'MEDIUM' }
+          Add-Finding -Severity $sev -Category 'Startup entry' -Evidence $_.Name -Path $_.FullName -CreatedAt $_.CreationTime -ModifiedAt $_.LastWriteTime -Details 'User Startup folder'
         }
       }
     }
@@ -212,8 +243,9 @@ function Search-StartupTasksServices {
   $common = "$env:ProgramData\Microsoft\Windows\Start Menu\Programs\Startup"
   if (Test-Path $common) {
     Get-ChildItem $common -Force -File -EA SilentlyContinue | ForEach-Object {
-      if (Test-MacroName $_.Name) {
-        Add-Finding -Severity 'HIGH' -Category 'Startup entry' -Evidence $_.Name -Path $_.FullName -Details 'All Users Startup'
+      if ((Test-MacroName $_.Name) -or (Test-PeripheralSoftwareName $_.Name)) {
+        $sev = if (Test-MacroName $_.Name) { 'HIGH' } else { 'MEDIUM' }
+        Add-Finding -Severity $sev -Category 'Startup entry' -Evidence $_.Name -Path $_.FullName -Details 'All Users Startup'
       }
     }
   }
@@ -236,7 +268,7 @@ function Search-BAM {
     Get-ItemProperty $_.PSPath -EA SilentlyContinue | ForEach-Object {
       $_.PSObject.Properties | Where-Object { $_.Name -match '\\Device\\' -or $_.Name -match ':[\\]' } | ForEach-Object {
         $path = $_.Name
-        if (Test-MacroName $path) {
+        if ((Test-MacroName $path) -or (Test-PeripheralSoftwareName $path)) {
           $ts = $null
           try {
             if ($_.Value -is [byte[]] -and $_.Value.Length -ge 8) {
@@ -244,7 +276,9 @@ function Search-BAM {
               $ts = [DateTime]::FromFileTimeUtc($filetime).ToLocalTime()
             }
           } catch {}
-          Add-Finding -Severity 'HIGH' -Category 'BAM execution trace' -Evidence ([IO.Path]::GetFileName($path)) -Path $path -UsedAt $ts -Details "BAM SID: $sid"
+          $sev = if (Test-MacroName $path) { 'HIGH' } else { 'MEDIUM' }
+          $cat = if (Test-MacroName $path) { 'BAM execution trace' } else { 'BAM peripheral trace' }
+          Add-Finding -Severity $sev -Category $cat -Evidence ([IO.Path]::GetFileName($path)) -Path $path -UsedAt $ts -Details "BAM SID: $sid"
         }
       }
     }
@@ -254,10 +288,10 @@ function Search-BAM {
 function Search-Event4688 {
   if (-not $script:IsAdmin) { return }
   try {
-    $events = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688; StartTime=(Get-Date).AddDays(-2)} -MaxEvents 600 -EA SilentlyContinue
+    $events = Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4688; StartTime=(Get-Date).AddDays(-2)} -MaxEvents 700 -EA SilentlyContinue
     foreach ($e in $events) {
       $msg = $e.Message
-      if ($msg -match '(?i)(AutoHotkey|AutoIt3|TinyTask|Pulover|Keyran|XMouse|OPAutoClicker|GSAutoClicker|Murgee|AlphaClicker|\.ahk|\.au3)') {
+      if ($msg -match '(?i)(AutoHotkey|AutoIt3|TinyTask|Pulover|Keyran|XMouse|OPAutoClicker|GSAutoClicker|Murgee|AlphaClicker|ATK HUB|\.ahk|\.au3)') {
         $proc = if ($msg -match 'New Process Name:\s*(.+)') { $Matches[1].Trim() } else { 'Unknown' }
         Add-Finding -Severity 'HIGH' -Category 'Event 4688 process creation' -Evidence $proc -UsedAt $e.TimeCreated -Details 'Security log'
       }
@@ -276,6 +310,7 @@ function Search-FilterDrivers {
 
 function Search-PeripheralSoftware {
   if ($ExcludePeripheral) { return }
+
   $running = @{}
   Get-CimInstance Win32_Process | ForEach-Object {
     $n = $_.Name; $c = $_.CommandLine; $p = $_.ExecutablePath
@@ -293,6 +328,40 @@ function Search-PeripheralSoftware {
   foreach ($v in $running.Keys) {
     $e = $running[$v]
     Add-Finding -Severity 'MEDIUM' -Category 'Peripheral software running' -Evidence $e.Vendor -Path $e.Path -UsedAt $e.Started -Details "Processes: $($e.Count)"
+  }
+
+  $extraPaths = @(
+    "$env:LOCALAPPDATA\Programs\ATK HUB",
+    "$env:LOCALAPPDATA\ATK",
+    "$env:APPDATA\ATK",
+    "$env:LOCALAPPDATA\Programs\ATK V HUB",
+    "$env:PROGRAMFILES\ATK",
+    "${env:PROGRAMFILES(X86)}\ATK",
+    "$env:LOCALAPPDATA\LGHUB",
+    "$env:PROGRAMFILES\LGHUB",
+    "$env:PROGRAMDATA\SteelSeries",
+    "$env:PROGRAMDATA\Glorious Core",
+    "$env:LOCALAPPDATA\Razer",
+    "$env:APPDATA\Razer",
+    "$env:PROGRAMDATA\Razer",
+    "$env:APPDATA\ROCCAT",
+    "${env:PROGRAMFILES(X86)}\REDRAGON Gaming Mouse",
+    "${env:PROGRAMFILES(X86)}\Attack Shark*",
+    "$env:LOCALAPPDATA\Pulsar",
+    "$env:LOCALAPPDATA\LAMZU",
+    "$env:LOCALAPPDATA\Darmoshark",
+    "$env:LOCALAPPDATA\Ajazz",
+    "$env:LOCALAPPDATA\VGN",
+    "$env:APPDATA\Corsair",
+    "$env:LOCALAPPDATA\Corsair",
+    "$env:PROGRAMDATA\Corsair"
+  )
+
+  foreach ($p in $extraPaths) {
+    Get-Item -Path $p -Force -ErrorAction SilentlyContinue | ForEach-Object {
+      $vendor = Get-PeripheralVendor $_.FullName
+      Add-Finding -Severity 'MEDIUM' -Category 'Peripheral software present' -Evidence $vendor -Path $_.FullName -ModifiedAt $_.LastWriteTime -Details 'Known peripheral software location'
+    }
   }
 }
 
@@ -384,8 +453,9 @@ function Search-DeletedMacros {
           $raw = [Text.Encoding]::Unicode.GetString($bytes, 24, $bytes.Length - 24).Trim([char]0)
           $name = [IO.Path]::GetFileName($raw)
           if (Test-OwnToolFile $raw) { return }
-          if (Test-MacroName $name -or Test-MacroName $raw) {
-            Add-Finding -Severity 'MEDIUM' -Category 'Deleted macro trace' -Evidence $name -Path $raw -DeletedAt $del -Details 'Recycle Bin (last 48h)'
+          if ((Test-MacroName $name) -or (Test-MacroName $raw) -or (Test-PeripheralSoftwareName $name)) {
+            $sev = if (Test-MacroName $name -or Test-MacroName $raw) { 'MEDIUM' } else { 'LOW' }
+            Add-Finding -Severity $sev -Category 'Deleted macro/peripheral trace' -Evidence $name -Path $raw -DeletedAt $del -Details 'Recycle Bin (last 48h)'
           }
         } catch {}
       }
@@ -395,10 +465,15 @@ function Search-DeletedMacros {
 function Search-Prefetch {
   $pf = Join-Path $env:SystemRoot 'Prefetch'
   if (-not (Test-Path $pf)) { return }
-  $patterns = @('*AUTOHOTKEY*','*AUTOIT*','*TINYTASK*','*OPAUTO*','*GSAUTO*','*MURGEE*','*ALPHACLICK*','*CLICKER*','*PULOVER*','*KEYRAN*','*XMOUSE*','*JITBIT*','*INTERCEPT*')
+  $patterns = @(
+    '*AUTOHOTKEY*','*AUTOIT*','*TINYTASK*','*OPAUTO*','*GSAUTO*','*MURGEE*',
+    '*ALPHACLICK*','*CLICKER*','*PULOVER*','*KEYRAN*','*XMOUSE*','*JITBIT*',
+    '*INTERCEPT*','*ATK*HUB*','*LGHUB*','*SYNAPSE*','*ICUE*'
+  )
   foreach ($pat in $patterns) {
     Get-ChildItem $pf -Filter "$pat.pf" -File -Force -EA SilentlyContinue | ForEach-Object {
-      Add-Finding -Severity 'HIGH' -Category 'Prefetch execution' -Evidence $_.Name -Path $_.FullName -UsedAt $_.LastWriteTime -ModifiedAt $_.LastWriteTime -Details 'Prefetch proves execution'
+      $sev = if ($_.Name -match '(?i)(AUTOHOTKEY|AUTOIT|TINYTASK|OPAUTO|GSAUTO|CLICKER|PULOVER|KEYRAN|INTERCEPT)') { 'HIGH' } else { 'MEDIUM' }
+      Add-Finding -Severity $sev -Category 'Prefetch execution' -Evidence $_.Name -Path $_.FullName -UsedAt $_.LastWriteTime -ModifiedAt $_.LastWriteTime -Details 'Prefetch execution trace'
     }
   }
 }
@@ -411,7 +486,7 @@ function Search-RecentJavaLogs {
       Sort-Object LastWriteTime -Descending | Select-Object -First 3 |
       ForEach-Object {
         $c = Get-Content $_.FullName -Raw -EA SilentlyContinue
-        if ($c -match '(?i)(autohotkey|autoit|tinytask|op.?auto|gs.?auto|murgee|alphaclicker|keyran|xmouse)') {
+        if ($c -match '(?i)(autohotkey|autoit|tinytask|op.?auto|gs.?auto|murgee|alphaclicker|keyran|xmouse|atk.?hub)') {
           Add-Finding -Severity 'MEDIUM' -Category 'Minecraft log hit' -Evidence $_.Name -Path $_.FullName -ModifiedAt $_.LastWriteTime -Details 'Keyword in recent MC log'
         }
       }
@@ -518,13 +593,13 @@ th{background:#1a1a1a}</style></head><body>
 Write-Header
 Write-ProgressBar 0 'Starting scan'
 
-Search-KnownMacroProcesses;     Write-ProgressBar 12 'Processes'
-Search-StartupTasksServices;    Write-ProgressBar 22 'Startup/Tasks'
-Search-BAM;                     Write-ProgressBar 32 'BAM'
-Search-Event4688;               Write-ProgressBar 42 'Event 4688'
-Search-FilterDrivers;           Write-ProgressBar 50 'Filter drivers'
-Search-PeripheralSoftware;      Write-ProgressBar 58 'Peripherals'
-Search-MacroFiles;              Write-ProgressBar 70 'Macro files'
+Search-KnownMacroProcesses;     Write-ProgressBar 10 'Processes'
+Search-StartupTasksServices;    Write-ProgressBar 20 'Startup/Tasks'
+Search-BAM;                     Write-ProgressBar 30 'BAM'
+Search-Event4688;               Write-ProgressBar 40 'Event 4688'
+Search-FilterDrivers;           Write-ProgressBar 48 'Filter drivers'
+Search-PeripheralSoftware;      Write-ProgressBar 60 'Peripherals + ATK'
+Search-MacroFiles;              Write-ProgressBar 72 'Macro files'
 Search-AhkScriptContent;        Write-ProgressBar 82 'Script content'
 Search-DeletedMacros;           Write-ProgressBar 90 'Deleted traces'
 Search-Prefetch;                Write-ProgressBar 96 'Prefetch'
@@ -539,6 +614,7 @@ Export-Results
 Write-Host ('='*86) -ForegroundColor Red
 Write-Host 'HIGH = direct proof. MEDIUM = strong trace. LOW = weak context only.' -ForegroundColor DarkGray
 Write-Host 'Run as Admin for best coverage.' -ForegroundColor DarkGray
+Write-Host 'Note: Pure onboard mouse macros may not leave software traces.' -ForegroundColor DarkGray
 if (-not (Test-TimeBudget)) { Write-Host 'Time budget reached.' -ForegroundColor Yellow }
 if (-not $NoPause) { Write-Host; Read-Host 'Press Enter to exit' | Out-Null }
 
